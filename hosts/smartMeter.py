@@ -7,38 +7,40 @@ from datetime import timedelta
 
 PORT = 8080
 BUFFER_SIZE = 1024
+flag = False
 #abstraction of a meter reading
 #has attributes to set and get a reading
 class Reading:
     'Reading object with all the necessary data'
     meterID = None
     currentReading = 0.0
-    # lastReadingTime = time.time()
+    __alive = True
     interval = 3
+
     def __init__(self,params):
         """ Constructor """
         self.meterID =  params
         self.currentReading = 0;
         self.lastReadingTime = None
-
-        thread = threading.Thread(target=self.run, args=())
-        thread.daemon = True
-        thread.start()
+        self.thread = threading.Thread(target=self.run, args=())
+        self.thread.daemon = True
+        self.thread.start()
 
     def getLatestReading(self):
         """ Returns latest reading and registers last timeStamp """
         if self.currentReading >= 0.0:
             self.lastReadingTime = time.time()
             print str(self.lastReadingTime) + ":" + str(self.currentReading) + "Wh\n"
-            return (self.lastReadingTime, self.currentReading)
+            return (self.meterID, self.lastReadingTime, self.currentReading)
         else:
             return False
 
-    def __setlastReading(value,timeStamp):
+    def __setlastReading(self,value,timeStamp):
         self.currentReading = value
+
     def run(self):
         """ Logic that simulates constant meter usage """
-        while True:
+        while self.__alive == True:
             increment = random.uniform(0.0, 0.1) * self.interval
             increment = random.randint(0,1) * random.randint(0,1) * increment
             #print "increment is : %f" % (increment)
@@ -46,50 +48,89 @@ class Reading:
             self.currentReading += increment;
             if self.currentReading == 32454:
                 self.currentReading = 0.0
-            #print "Current Reading is: %f " % (self.currentReading)
+            # print "Current Reading is: %f " % (self.currentReading)
             time.sleep(self.interval)
 
+    def shutDownMeter(self):
+        self.__alive = False
+        self.thread.join()
 
-# def emulateReading(lastReadingTime):
-#     time.sleep(10)
-#     currentReadingTime = time.time()
-#     interval = int(currentReadingTime - lastReadingTime)
-#     print "Interval is: %f \n current time is: %f \n last readingTimeis: %f " % (interval, currentReadingTime, lastReadingTime)
-#     print random.uniform(0.0,0.1) * interval
-#     return (interval,currentReadingTime)
+#Serialize reading
+def formatReading(r):
+    # Need to serializre before sending
+    jsonRead = { "id" : r[0], "ts": r[1], "reading" : r[2]}
+    jsonString = json.dumps(jsonRead)
+    #sendReading(jsonString)
+    return jsonString
 
-def sendReadingOnce(r):
+def sendReading(rj):
+    """ Send reading over the network. """
+    # send reading over TCP socket
+    s = socket.socket()
+    host = socket.gethostname()
+    s.connect((host, PORT))
+    s.send(rj)
+    ack = s.recv(BUFFER_SIZE)
+    s.close()
+    print "Received:", ack
+    return ack
+
+def Regular (r,interval):
+    """ Send Reading regularly within given interval."""
+    print "Sending regularly"
+    while sendFlag == True:
+        sampleReading = r.getLatestReading()
+        if sampleReading == False:
+            print "corrupted reading"
+            continue
+        sendReading(formatReading(sampleReading))
+        time.sleep(interval)
+    print("stopped sending at an interval of %d seconds" % (interval))
+    return
+
+def Once(r):
+    """ Send Reading once via user input."""
+    print "Sending once"
     sampleReading = r.getLatestReading()
     if sampleReading == False:
-        print "corrupt reading"
+        print "corrupted reading"
         return
-    # Need to serializre before sending
-    jsonRead = { "id" : r.meterID, "reading" : sampleReading[1], "timeStamp": sampleReading[0]}
-    readingString = json.dumps(jsonRead)
-    print readingString
-    #send reading over TCP socket
-    s = socket.socket()         # Create a socket object
-    host = socket.gethostname() # Get local machine name
-    s.connect((host, PORT))
-    s.send(readingString)
-    print "Received:", s.recv(BUFFER_SIZE)
-    s.close()
+    print sendReading(formatReading(sampleReading))
 
-def regularReading():
-    print "placeholder"
-
+###########################main###########################
 if __name__=='__main__':
-    if len(sys.argv) < 2 :
+    sendFlag = False
+    if len(sys.argv) < 2:
         meterID = 1
     else:
         meterID = sys.argv[1]
-    #print 'meterID is: ', sys.argv[1]
     reading = Reading(meterID)
-
-    print 'Welcome to smart meter Daemon Press S to start sending readings at intervals of 60 seconds press R to send the current reading rightaway.'
-    choice = raw_input('> ')
-    if choice == 'S' or choice == 's':
-        # sendReadings()
-        print "coming soon"
-    elif choice == 'R' or choice == 'r':
-        sendReadingOnce(reading)
+    # #print 'meterID is: ', sys.argv[1]
+    thread1 = threading.Thread(target=Regular, args=(reading,5))
+    # thread1.daemon = True
+    print """Welcome to smart meter Daemon. \nPress S to start sending readings at regular intervals \npress R to send the current reading rightaway.
+    Press Q to stop sending regularly."""
+    while True:
+        choice = raw_input('> ')
+        # regular readings
+        if choice == 'S' or choice == 's':
+            sendFlag = True
+            if thread1.is_alive() == False:
+                thread1.start()
+                # continue
+        # stop regular
+        elif choice == 'Q' or choice == 'q':
+            sendFlag = False
+            if thread1.is_alive():
+                thread1.join()
+        # # send reading once
+        elif choice == 'R' or choice == 'r':
+            Once(reading)
+        elif choice == 'X' or choice == 'x':
+            sendFlag = False
+            if thread1.is_alive():
+                thread1.join()
+            reading.shutDownMeter()
+            quit()
+        else:
+            continue
