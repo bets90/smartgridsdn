@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import socket,sys,traceback
-PORT = 8080
+
 def mainServer():
     "concentrator daemon that listens to connections"
     s = socket.socket()
@@ -21,4 +21,8 @@ def mainServer():
         c.send("ACK")
         c.close()
 if __name__=='__main__':
+    if len(sys.argv) >= 2:
+        PORT = int(sys.argv[1])
+    else:
+        PORT = 8080
     mainServer()
