@@ -61,7 +61,6 @@ def formatReading(r):
     jsonRead = { "id" : r[0], "ts": r[1], "reading" : r[2]}
     jsonString = json.dumps(jsonRead)
     #sendReading(jsonString)
-    print type(jsonRead)
     return jsonString
 
 def sendReading(rj):
@@ -102,7 +101,7 @@ def Once(r):
 if __name__=='__main__':
     sendFlag = False
     if len(sys.argv) < 2:
-        meterID = 1
+        meterID = 2
     else:
         meterID = sys.argv[1]
     reading = Reading(meterID)
@@ -132,7 +131,6 @@ if __name__=='__main__':
             if thread1.is_alive():
                 thread1.join()
             reading.shutDownMeter()
-            print "Goodbye"
             quit()
         else:
             continue
