@@ -60,8 +60,6 @@ def formatReading(r):
     # Need to serializre before sending
     jsonRead = { "id" : r[0], "ts": r[1], "reading" : r[2]}
     jsonString = json.dumps(jsonRead)
-    #sendReading(jsonString)
-    print type(jsonRead)
     return jsonString
 
 def sendReading(rj):

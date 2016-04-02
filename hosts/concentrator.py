@@ -4,7 +4,7 @@ import time, threading
 import json
 import sys, signal
 from array import array
-#from threading import Lock
+
 
 class Aggregator:
     runFlag = True
