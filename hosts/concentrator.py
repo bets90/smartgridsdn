@@ -16,7 +16,7 @@ class Aggregator:
         """ Constructor """
         self.bucket = []
         self.listenerThread = threading.Thread(target=self.listen, args=())
-        self.bucketWatcherThread = threading.Thread(target=self.bucketWatcher, args=())
+        self.bucketWatcherThread = threading.Thread(target=self.bucket_watcher, args=())
         self.listenerThread.start()
         self.bucketWatcherThread.start()
 
@@ -25,7 +25,7 @@ class Aggregator:
         # s = socket.socket()
         host = socket.gethostname()
         try:
-            self.s.bind((host, PORT))
+            self.s.bind(("", PORT))
             self.s.listen(5)
             print 'Listening on port %d' % PORT
         except socket.error:
@@ -34,72 +34,67 @@ class Aggregator:
             sys.exit(1)
         while self.runFlag:
             c, addr = self.s.accept()
-            tempBuffer = c.recv(1024)
-            print 'Got connection from ',addr
-            print tempBuffer
+            temp_buffer = c.recv(1024)
+            print 'Got connection from ', addr
+            print temp_buffer
             if not self.runFlag:
                 continue
             try:
-                tempBuffer = json.loads(tempBuffer)
+                temp_buffer = json.loads(temp_buffer)
             except ValueError, e:
-                print "Error in decoding json" ,  e
+                print "Error in decoding json", e
                 continue
             # Acquire Lock here
             bucketLock.acquire()
-            self.bucket.append(tempBuffer)
+            self.bucket.append(temp_buffer)
             bucketLock.release()
             # Release Lock here
-            # print type(tempBuffer)
+            # print type(temp_buffer)
             c.send("ACK")
             c.close()
         return
 
-    def bucketWatcher(self):
+    def bucket_watcher(self):
         """Check status of bucket"""
         acquired = bucketLock.acquire()
         try:
             if len(self.bucket) >= 2:
-                tempBuffer = self.bucket
+                temp_buffer = self.bucket
                 self.bucket = []
                 bucketLock.release()
-                self.sendUpstream(tempBuffer)
+                self.send_upstream(temp_buffer)
             else:
                 bucketLock.release()
             time.sleep(1)
             # print "bye"
             if self.runFlag:
-                self.bucketWatcher()
-        except thread.error:
+                self.bucket_watcher()
+        except threading.ThreadError:
             bucketLock.release()
             traceback.print_exc()
 
-        #finally:
-        # TODO: check how to unlock here
-            #print acquired
-            # if acquired:
-            #    bucketLock.release()
-
-    def sendUpstream(self, bufferedData):
+    def send_upstream(self, buffered_data):
         """ Send reading over the network. """
 
-        serialzedReading = json.dumps(bufferedData)
+        serialized_buffer_data = json.dumps(buffered_data)
 
-        print "To be sent: %s " % serialzedReading
+        print "To be sent: %s " % serialized_buffer_data
         try:
             # send reading over TCP socket
             s = socket.socket()
             host = socket.gethostname()
             s.connect((host, SERVER_PORT))
-            s.send(serialzedReading)
+            s.send(serialized_buffer_data)
             ack = s.recv(BUFFER_SIZE)
             s.close()
             print "Received:", ack
             return ack
-        except socket.error as errmsg:
-            print "Socket error: %s" % errmsg
+        except socket.error as err_msg:
+            print "Utility server (%s) is not responding. Data not sent." % host
+            print "Network error: %s" % err_msg
 
-    def stopListening(self):
-        """ Stop listner thread """
+    def stop_listening(self):
+        """ Stop listener thread """
         # print "killing listener"
         self.runFlag = False
         socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect( ( socket.gethostname() , PORT))
@@ -107,9 +102,9 @@ class Aggregator:
         self.listenerThread.join()
 
 
-def signalHandler(signal,frame):
+def signal_handler(signal, frame):
     # print "ctrl-c pressed"
-    ag.stopListening()
+    ag.stop_listening()
     sys.exit(0)
 
 if __name__ == '__main__':
@@ -122,5 +117,5 @@ if __name__ == '__main__':
     BUFFER_SIZE = 1024
     bucketLock = threading.Lock()
     ag = Aggregator()
-    signal.signal(signal.SIGINT, signalHandler)
+    signal.signal(signal.SIGINT, signal_handler)
     signal.pause()

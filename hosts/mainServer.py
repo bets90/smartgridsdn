@@ -22,7 +22,7 @@ class CollectReading(threading.Thread):
     def __init__(self):
         super(CollectReading, self).__init__()
         self.listenerThread = threading.Thread(target=self.listen)
-        self.dataThread = threading.Thread(target=self.updateDB)
+        # self.dataThread = threading.Thread(target=self.update_db)
         self.dataSignal = threading.Event()
         self.listenSignal = threading.Event()
         self.reader_lock = threading.Lock()
@@ -33,7 +33,7 @@ class CollectReading(threading.Thread):
                     (id, kwh, lastread, PRIMARY KEY (id, kwh))''')
         self.conn.commit()
         self.listenerThread.start()
-        self.dataThread.start()
+        # self.dataThread.start()
 
     def listen(self):
         """Listen to concentrators on different Area"""
@@ -52,9 +52,9 @@ class CollectReading(threading.Thread):
             if not self.runFlag:
                 continue
             try:
-                self.readings.append = json.loads(temp_buffer)
-                if len(self.readings) == 3:
-                    status = self.updateDB()
+                self.readings.append(json.loads(temp_buffer)[0])
+                if len(self.readings) == 5:
+                    status = self.update_db()
                     self.listenSignal.wait()
                     if status:
                         print "changes written to DB"
@@ -63,17 +63,21 @@ class CollectReading(threading.Thread):
                 print "Error in decoding json"
                 traceback.print_exc()
             finally:
+                if self.readings is not None:
+                    self.update_db()
+                self.listenSignal.wait()
                 self.listenSignal.set()
             c.send("SER_ACK")
             c.close()
         return
 
-    def updateDB(self):
+    def update_db(self):
         try:
             print "Data received"
             rdstmt = []
+            print self.readings
             for reading in self.readings:
-                print reading['id']
+                print reading
                 row = (reading['id'], reading['reading'], reading['ts'])
                 rdstmt.append(row)
                 print "....."
@@ -81,13 +85,13 @@ class CollectReading(threading.Thread):
             self.conn.commit()
             self.readings = []
 
-        except self.c.error:
+        except sqlite3.Error:
             traceback.print_exc()
         finally:
             self.listenSignal.set()
         return True
 
-    def stopListening(self):
+    def stop_listening(self):
         """ Stop listener thread """
         print "killing listener"
         self.runFlag = False
@@ -95,22 +99,22 @@ class CollectReading(threading.Thread):
         self.conn.close()
         # self.dataSignal.clear()
         self.listenerThread.join()
-        self.dataThread.join()
+#        self.dataThread.join()
 
-    def showData(self, meter_id):
+    def show_data(self, meter_id):
         """Show Data per meterID"""
         cur = self.c.execute("SELECT * FROM readings WHERE id=? ORDER BY lastread", meter_id)
         for row in cur:
             print row
 
 
-def signalHandler(signal, frame):
+def signal_handler(signal, frame):
     # print "ctrl-c pressed"
-    reader.stopListening()
+    reader.stop_listening()
     sys.exit(0)
 
 
-def validID(meterid):
+def valid_id(meterid):
     try:
         if 0 < int(meterid) < 255:
             return True
@@ -121,7 +125,7 @@ def validID(meterid):
 
 if __name__ == '__main__':
     reader = CollectReading()
-    # reader.updateDB()
+
     choice = ''
     # print "Enter Meter ID to see readings \n press S to exit this mode \n Press X to exit program"
 
@@ -137,5 +141,5 @@ if __name__ == '__main__':
     #     else:
     #         continue
 
-    signal.signal(signal.SIGINT, signalHandler)
+    signal.signal(signal.SIGINT, signal_handler)
     signal.pause()
