@@ -1,17 +1,20 @@
-#!/usr/bin/python           # This is client.py file
-import socket,time,random
+#!/usr/bin/python
+import json
+import random
+import socket
 import sys
 import threading
-import pickle, json
-from datetime import timedelta
+import time
 
 PORT = 8080
 BUFFER_SIZE = 1024
 flag = False
-#abstraction of a meter reading
-#has attributes to set and get a reading
+
+
+# abstraction of a meter reading
+# has attributes to set and get a reading
 class Reading:
-    'Reading object with all the necessary data'
+    """Reading object with all the necessary data"""
     meterID = None
     currentReading = 0.0
     __alive = True
@@ -19,8 +22,8 @@ class Reading:
 
     def __init__(self,params):
         """ Constructor """
-        self.meterID =  params
-        self.currentReading = 0;
+        self.meterID = params
+        self.currentReading = 0
         self.lastReadingTime = None
         self.thread = threading.Thread(target=self.run, args=())
         self.thread.daemon = True
@@ -31,19 +34,19 @@ class Reading:
         if self.currentReading >= 0.0:
             self.lastReadingTime = time.time()
             print str(self.lastReadingTime) + ":" + str(self.currentReading) + "Wh\n"
-            return (self.meterID, self.lastReadingTime, self.currentReading)
+            return self.meterID, self.lastReadingTime, self.currentReading
         else:
             return False
 
-    def __setlastReading(self,value,timeStamp):
+    def __setlastReading(self, value, timeStamp):
         self.currentReading = value
 
     def run(self):
         """ Logic that simulates constant meter usage """
-        while self.__alive == True:
+        while self.__alive:
             increment = random.uniform(0.0, 0.1) * self.interval
             increment = random.randint(0,1) * increment
-            #print "increment is : %f" % (increment)
+            # print "increment is : %f" % (increment)
             # increment = float ("{0:.2f}".format(increment))
             self.currentReading += increment;
             if self.currentReading == 32454:
@@ -55,12 +58,14 @@ class Reading:
         self.__alive = False
         self.thread.join()
 
-#Serialize reading
-def formatReading(r):
+
+# Serialize reading
+def formatReading (r):
     # Need to serializre before sending
     jsonRead = { "id" : r[0], "ts": r[1], "reading" : r[2]}
     jsonString = json.dumps(jsonRead)
     return jsonString
+
 
 def sendReading(rj):
     """ Send reading over the network. """
@@ -74,30 +79,32 @@ def sendReading(rj):
     print "Received:", ack
     return ack
 
-def Regular (r,interval):
+
+def Regular (r, interval):
     """ Send Reading regularly within given interval."""
     print "Sending regularly"
-    while sendFlag == True:
+    while sendFlag:
         sampleReading = r.getLatestReading()
-        if sampleReading == False:
+        if not sampleReading:
             print "corrupted reading"
             continue
         sendReading(formatReading(sampleReading))
         time.sleep(interval)
-    print("stopped sending at an interval of %d seconds" % (interval))
+    print "stopped sending at an interval of %d seconds" % interval
     return
+
 
 def Once(r):
     """ Send Reading once via user input."""
     print "Sending once"
     sampleReading = r.getLatestReading()
-    if sampleReading == False:
+    if not sampleReading:
         print "corrupted reading"
         return
     print sendReading(formatReading(sampleReading))
+    return
 
-###########################main###########################
-if __name__=='__main__':
+if __name__ == "__main__":
     sendFlag = False
     if len(sys.argv) < 2:
         meterID = 1
@@ -114,7 +121,7 @@ if __name__=='__main__':
         # regular readings
         if choice == 'S' or choice == 's':
             sendFlag = True
-            if thread1.is_alive() == False:
+            if not thread1.is_alive():
                 thread1.start()
                 # continue
         # stop regular
