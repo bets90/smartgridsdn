@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         meterID = 1
-        CONCENTRATOR_HOST = "127.0.0.1"
+        CONCENTRATOR_HOST = "10.0.0.20"
     elif len(sys.argv) is 2:
         meterID = sys.argv[1]
         CONCENTRATOR_HOST = "127.0.0.1"
@@ -123,26 +123,31 @@ if __name__ == "__main__":
 
     thread1 = threading.Thread(target=regular, args=(reading, 5))
     # thread1.daemon = True
-    print """Welcome to smart meter Daemon. \nPress S to start sending readings at regular intervals
+    prompt = '%s:> ' % meterID
+    print "********** Smart Meter **********"
+    print """Press S to start sending readings at regular intervals
     \npress R to send the current reading right away.
-    Press Q to stop sending regularly."""
+    \nPress Q to stop sending regularly.
+    \nPress X to quit the daemon. """
+
+    print "Meter ID: %s" % meterID
     while True:
-        choice = raw_input('> ')
+        choice = raw_input(prompt)
         # regular readings
-         choice == 'S' or choice == 's':
+        if choice == 'S' or choice == 's':
             sendFlag = True
             if not thread1.is_alive():
                 thread1.start()
                 # continue
         # stop regular
-        elif choice == 'Q' or choice == 'q':
+        elif choice == 'X' or choice == 'x':
             sendFlag = False
             if thread1.is_alive():
                 thread1.join()
-        # # send reading once
+        # send reading once
         elif choice == 'R' or choice == 'r':
             once(reading)
-        elif choice == 'X' or choice == 'x':
+        elif choice == 'Q' or choice == 'q' or choice == 'exit':
             sendFlag = False
             if thread1.is_alive():
                 thread1.join()
