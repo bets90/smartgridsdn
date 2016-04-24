@@ -7,6 +7,11 @@ import threading
 import time
 import traceback
 
+PORT = 8080
+SERVER_PORT = 3128
+BUFFER_SIZE = 1024
+# number of records to keep in memory before passing to main server
+CONCENTRATOR_CAP = 5
 
 class Aggregator:
     runFlag = True
@@ -59,8 +64,8 @@ class Aggregator:
 
         while self.runFlag:
             try:
-                acquired = bucketLock.acquire()
-                if len(self.bucket) >= 2:
+                acquired = bucketLock .acquire()
+                if len(self.bucket) >= CONCENTRATOR_CAP:
                     temp_buffer = self.bucket
                     self.bucket = []
                     bucketLock.release()
@@ -68,9 +73,7 @@ class Aggregator:
                 else:
                     bucketLock.release()
                 time.sleep(1)
-                # print "bye"
-                # if self.runFlag:
-                #    self.bucket_watcher()
+
             except threading.ThreadError:
                 # bucketLock.release()
                 traceback.print_exc()
@@ -81,19 +84,18 @@ class Aggregator:
 
         serialized_buffer_data = json.dumps(buffered_data)
 
-        print "To be sent: %s " % serialized_buffer_data
+        #print "To be sent: %s " % serialized_buffer_data
         try:
             # send reading over TCP socket
             s = socket.socket()
-            host = socket.gethostname()
-            s.connect((host, SERVER_PORT))
+            s.connect((SERVER_HOST, SERVER_PORT))
             s.send(serialized_buffer_data)
             ack = s.recv(BUFFER_SIZE)
             s.close()
             print "Received:", ack
             return ack
         except socket.error as err_msg:
-            print "Utility server (%s) is not responding. Data not sent." % host
+            print "Utility server (%s) is not responding. Data not sent." % SERVER_HOST
             print "Network error: %s" % err_msg
 
     def stop_listening(self):
@@ -112,12 +114,10 @@ def signal_handler(signal, frame):
 
 if __name__ == '__main__':
     if len(sys.argv) >= 2:
-        PORT = int(sys.argv[1])
-        SERVER_PORT = int(sys.argv[2])
+        SERVER_HOST = str(sys.argv[2])
     else:
-        PORT = 8080
-        SERVER_PORT = 3128
-    BUFFER_SIZE = 1024
+        SERVER_HOST = '10.0.0.10'  # fallback plan
+
     bucketLock = threading.Lock()
     ag = Aggregator()
     signal.signal(signal.SIGINT, signal_handler)

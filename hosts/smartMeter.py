@@ -109,20 +109,20 @@ def once(r):
 
 if __name__ == "__main__":
     sendFlag = False
-
     if len(sys.argv) < 2:
-        meterID = 1
+        meterID = str(random.randint(1, 10))
         CONCENTRATOR_HOST = "10.0.0.20"
     elif len(sys.argv) is 2:
         meterID = sys.argv[1]
-        CONCENTRATOR_HOST = "127.0.0.1"
+        CONCENTRATOR_HOST = "10.0.0.20"
     elif len(sys.argv) is 3:
         meterID = sys.argv[1]
-        CONCENTRATOR_HOST = sys.argv[2]
+        CONCENTRATOR_HOST = str(sys.argv[2])
+        print CONCENTRATOR_HOST
     reading = Reading(meterID)
 
     thread1 = threading.Thread(target=regular, args=(reading, 5))
-    # thread1.daemon = True
+
     prompt = '%s:> ' % meterID
     print "********** Smart Meter **********"
     print """Press S to start sending readings at regular intervals
