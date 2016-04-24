@@ -71,7 +71,7 @@ def send_reading(json_reading):
     try:
         # send reading over TCP socket
         s = socket.socket()
-        s.connect(("127.0.0.1", PORT))
+        s.connect((CONCENTRATOR_HOST, PORT))
         s.send(json_reading)
         ack = s.recv(BUFFER_SIZE)
         s.close()
@@ -109,6 +109,7 @@ def once(r):
 
 if __name__ == "__main__":
     sendFlag = False
+
     if len(sys.argv) < 2:
         meterID = 1
         CONCENTRATOR_HOST = "127.0.0.1"
@@ -123,12 +124,12 @@ if __name__ == "__main__":
     thread1 = threading.Thread(target=regular, args=(reading, 5))
     # thread1.daemon = True
     print """Welcome to smart meter Daemon. \nPress S to start sending readings at regular intervals
-    \npress R to send the current reading rightaway.
+    \npress R to send the current reading right away.
     Press Q to stop sending regularly."""
     while True:
         choice = raw_input('> ')
         # regular readings
-        if choice == 'S' or choice == 's':
+         choice == 'S' or choice == 's':
             sendFlag = True
             if not thread1.is_alive():
                 thread1.start()

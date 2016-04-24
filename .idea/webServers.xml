@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="ab046ae2-9118-48f2-8158-87009245b456" name="ami.betselot.me" url="http://ami.betselot.me">
+        <fileTransfer host="ami.betselot.me" port="22" accessType="SFTP" password="dfeedfebdffedf99df9adf9adf8b" username="bets">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

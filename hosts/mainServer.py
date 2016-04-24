@@ -8,7 +8,6 @@ import threading
 import traceback
 import signal
 
-
 PORT = 3128
 HOST = socket.gethostname()
 
@@ -123,10 +122,11 @@ def valid_id(meterid):
     except ValueError:
         return False
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     reader = CollectReading()
 
-    choice = ''
+    choice = ""
+
     # print "Enter Meter ID to see readings \n press S to exit this mode \n Press X to exit program"
 
     # while True:

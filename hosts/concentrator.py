@@ -56,22 +56,25 @@ class Aggregator:
 
     def bucket_watcher(self):
         """Check status of bucket"""
-        acquired = bucketLock.acquire()
-        try:
-            if len(self.bucket) >= 2:
-                temp_buffer = self.bucket
-                self.bucket = []
-                bucketLock.release()
-                self.send_upstream(temp_buffer)
-            else:
-                bucketLock.release()
-            time.sleep(1)
-            # print "bye"
-            if self.runFlag:
-                self.bucket_watcher()
-        except threading.ThreadError:
-            bucketLock.release()
-            traceback.print_exc()
+
+        while self.runFlag:
+            try:
+                acquired = bucketLock.acquire()
+                if len(self.bucket) >= 2:
+                    temp_buffer = self.bucket
+                    self.bucket = []
+                    bucketLock.release()
+                    self.send_upstream(temp_buffer)
+                else:
+                    bucketLock.release()
+                time.sleep(1)
+                # print "bye"
+                # if self.runFlag:
+                #    self.bucket_watcher()
+            except threading.ThreadError:
+                # bucketLock.release()
+                traceback.print_exc()
+            continue
 
     def send_upstream(self, buffered_data):
         """ Send reading over the network. """
