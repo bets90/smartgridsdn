@@ -14,13 +14,24 @@ class POXBridge(Controller):
     def __init__(self, name, cdir=POXDIR,
                  command='python pox.py',
                  cargs=('openflow.of_01 --port=%s '
-                        'forwarding.l2_learning'),
+                        'forwarding.l2_learning '
+                        'openflow.discovery '
+                        'misc.gephi_topo '
+                        'openflow.spanning_tree --no-flood --hold-down '
+                        'host_tracker '
+                        'info.packet_dump '
+                        'samples.pretty_log '
+                        'log --file=pox.log,w '
+                        'log.level --DEBUG'),
                  **kwargs):
+        print str(cargs)
         Controller.__init__(self, name, cdir=cdir,
-                    command=command,
-                    cargs=cargs, **kwargs)
-        for key in kwargs:
-            print "another keyword arg: %s: %s" % (key, kwargs[key])
+                            command=command,
+                            cargs=cargs,
+                            **kwargs)
+
+        # for key in kwargs:
+        #   print "another keyword arg: %s: %s" % (key, kwargs[key])
 
 controllers = {'poxbridge': POXBridge}
 

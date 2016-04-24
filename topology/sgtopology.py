@@ -18,8 +18,8 @@ def AMINetwork():
     c1 = net.addController('c1',
                            controller=AmiController,
                            #protocol='tcp',
-                           port=6635)
-    c2 = RemoteController('c2', ip='127.0.0.1', port=6633)
+                           port=6633)
+    c2 = RemoteController('c2', ip='127.0.0.1', port=6635)
     #net.addController(c2)
 
     info( '*** Add switches\n')

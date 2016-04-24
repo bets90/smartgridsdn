@@ -84,7 +84,7 @@ class Aggregator:
 
         serialized_buffer_data = json.dumps(buffered_data)
 
-        #print "To be sent: %s " % serialized_buffer_data
+        # print "To be sent: %s " % serialized_buffer_data
         try:
             # send reading over TCP socket
             s = socket.socket()
