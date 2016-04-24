@@ -1,14 +1,11 @@
 #!/usr/bin/python
 
 from mininet.net import Mininet
-from mininet.node import Controller, RemoteController, OVSController
-from mininet.node import CPULimitedHost, Host, Node
-from mininet.node import OVSKernelSwitch, UserSwitch
-from mininet.node import IVSSwitch
-from mininet.cli import CLI
+from mininet.node import Host
+from mininet.node import OVSKernelSwitch
 from mininet.log import setLogLevel, info
-from mininet.link import TCLink, Intf
-from subprocess import call
+from lib.controller import POXBridge as AmiController
+from mininet.cli import CLI
 
 def AMINetwork():
 
@@ -16,11 +13,11 @@ def AMINetwork():
                    build=False,
                    ipBase='10.0.0.0/8')
 
-    info( '*** Adding controller\n' )
-    c0=net.addController(name='c0',
-                      controller=Controller,
-                      protocol='tcp',
-                      port=6633)
+    info('*** Adding controller \n')
+    c1 =net.addController('c1',
+                          controller=AmiController,
+                          protocol='tcp',
+                          port=6633)
 
     info( '*** Add switches\n')
     s1 = net.addSwitch('s1', cls=OVSKernelSwitch)
@@ -43,17 +40,17 @@ def AMINetwork():
     
     info( '*** Starting network\n')
     net.build()
-    info( '*** Starting controllers\n')
+    # info ('*** Starting controllers\n')
     for controller in net.controllers:
         controller.start()
 
-    info( '*** Starting switches\n')
-    net.get('s1').start([c0])
-    net.get('s3').start([c0])
-    net.get('s2').start([c0])
+    # info('*** Starting switches\n')
+    net.get('s1').start([c1])
+    net.get('s3').start([c1])
+    net.get('s2').start([c1])
 
     info( '*** Post configure switches and hosts\n')
-
+    net.pingAll()
     CLI(net)
     net.stop()
 
